@@ -3,7 +3,7 @@ from tkinter import ttk
 from tkinter import *
 
 from database.mysql import useDBStore
-
+from excel.write_excel import write_to_excel
 db_data = tuple()
 DB = useDBStore()
 
@@ -19,11 +19,15 @@ def begin_year(event):
 def btn_click():
     for i in tree_date.get_children():
         tree_date.delete(i)
-    TIME = f'{date[0]}-0{date[1]}_{date[2]}-0{date[3]}'
+    TIME = f'{date[0]}-{date[1]}_{date[2]}-{date[3]}'
     db_data = DB.search_mysql(TIME)
+    print("db_data-----------------------------------------------")
+    print(db_data)
+    dict_data = DB.draw_cloud(TIME)
+    db_data = sorted(db_data, key=lambda i:i[2])
     for index, value in enumerate(db_data):
-        tree_date.insert('',index,text=f'{index+1}',  values=(index+1, value[0], value[1]))
-    DB.draw_cloud(TIME)
+        tree_date.insert('',index,text=f'{index+1}',  values=(index+1, value[0], value[1], value[2]))
+    write_to_excel(dict_data,f'{TIME}.xlsx')
 
 if __name__ == '__main__':
 
@@ -44,19 +48,20 @@ if __name__ == '__main__':
     CurrentTimeLabel = Label(root,relief='raised', text=time.strftime("%Y-%m-%d"), foreground='green', font=("黑体",80),
                              image='::tk::icons::information',cursor='mouse',bitmap='hourglass',compound='left')
     box = ttk.Combobox(root, textvariable=beginYear,values=[str(i) for i in range(2015,2024)])
-    box2 = ttk.Combobox(root, textvariable=beginMon,values=[str(i) for i in range(1,13)])
+    box2 = ttk.Combobox(root, textvariable=beginMon,values=[f"0{i}" if i/10<1 else str(i) for i in range(1,13)])
     box.bind("<<ComboboxSelected>>", begin_year)
     box2.bind("<<ComboboxSelected>>", begin_month)
     box3 = ttk.Combobox(root, textvariable=finishYear,values=[str(i) for i in range(2015,2024)])
-    box4 = ttk.Combobox(root, textvariable=finishMon,values=[str(i) for i in range(1,13)])
+    box4 = ttk.Combobox(root, textvariable=finishMon,values=[f"0{i}" if i/10<1 else str(i) for i in range(1,13)])
     box3.bind("<<ComboboxSelected>>", finish_year)
     box4.bind("<<ComboboxSelected>>", finish_month)
     btn = Button(root,text='查询',command=btn_click)
 
-    tree_date = ttk.Treeview(root, columns=('index', 'title', 'url'), show='headings')
+    tree_date = ttk.Treeview(root, columns=('index', 'title', 'url' ,'ref'), show='headings')
     tree_date.heading('index', text='序号')
     tree_date.heading('title', text='标题')
     tree_date.heading('url', text='链接')
+    tree_date.heading('ref', text='区域')
 
     scrollbar = ttk.Scrollbar(root, orient="vertical", command=tree_date.yview)
     tree_date.configure(yscrollcommand=scrollbar.set)
